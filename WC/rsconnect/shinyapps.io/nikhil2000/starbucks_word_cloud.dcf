@@ -1,0 +1,13 @@
+name: starbucks_word_cloud
+title: Starbucks Word Cloud
+username:
+account: nikhil2000
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 250026
+bundleId: 1141684
+url: https://nikhil2000.shinyapps.io/starbucks_word_cloud/
+when: 1513635516.03783
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .httr-oauth|clean_tweet.txt|clean_tweets_psl.txt|clean_tweets_pumlatte.txt|data_cleaning.R|nikhil_clean_tweet.txt|nikhil_clean_tweets_psl.txt|nikhil_clean_tweets_pumlatte.txt

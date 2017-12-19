@@ -1,0 +1,696 @@
+---
+title: "Final Project Presentation"
+author: "Nikhil Singh"
+date: "December 18, 2017"
+output:
+  ioslides_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+I did my final project on the coffeehouse chain Starbucks and analyzed its twitter data. I chose Starbucks because it is a very popular coffeehouse and many people tweet about it. Their twitter account is @Starbucks and it has 11.9 million followers with 118k tweets. I was also interested in analyzing twitter data about the Pumpkin Spice Latte drink which is a holiday themed drink so it was only recently released.
+ 
+ 
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# set up Twitter
+
+library(devtools)
+library(twitteR)
+
+api_key <- 	"j8AFNBsPFmuJyR2WrtPoPeWPr"
+api_secret <- "CbwhBhGZumtpOKRutoXeQ9Vr1ZI9iPUmUW00i09xZ0gAC0Q6ew"
+access_token <- "1164916388-8nfnf0oYBCSrnZCJzul73OU3m5sLJBDPqU66jPi"
+access_token_secret <- "xDxx03Yf71wsUwQfHo0SEdcy4RmTdvYhDhAsiq4I2usDE"
+
+setup_twitter_oauth(api_key, api_secret, access_token, access_token_secret)
+
+# [1] "Using direct authentication"
+# Use a local file ('.httr-oauth'), to cache OAuth access credentials between R sessions?
+# 
+# 1: Yes
+# 2: No
+# 
+# Selection: 1
+# Adding .httr-oauth to .gitignore
+```
+
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2)
+library(leaflet)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(twitteR)
+library(streamR)
+library(httr)
+library(dismo)
+library(XML)
+
+# # Search Twitter for your term
+# s <- searchTwitter('starbucks', n=1500) 
+# # convert search results to a data frame
+# df <- do.call("rbind", lapply(s, as.data.frame)) 
+# # extract the usernames
+# users <- unique(df$screenName)
+# users <- sapply(users, as.character)
+# # make a data frame for the loop to work with 
+# users.df <- data.frame(users = users, 
+#                        followers = "", stringsAsFactors = FALSE)
+# 
+# #Get followers data
+# for (i in 1:nrow(users.df)) 
+#     {
+#     # tell the loop to skip a user if their account is protected 
+#     # or some other error occurs  
+#     result <- try(getUser(users.df$users[i])$followersCount, silent = TRUE);
+#     if(class(result) == "try-error") next;
+#     # get the number of followers for each user
+#     users.df$followers[i] <- getUser(users.df$users[i])$followersCount
+#     # tell the loop to pause for 60 s between iterations to 
+#     # avoid exceeding the Twitter API request limit
+#     print('Sleeping for 60 seconds...')
+#     Sys.sleep(60); 
+#     }
+# 
+# users.df
+
+#user <- getUser("starbucks")
+#user_follower_IDs <- user$getFollowers(count=5000)
+#user_followers <- rbindlist(lapply(user_follower_IDs, as.data.frame)) 
+
+#filterStream("tweetsUS.json",track=c("Starbucks"),timeout=6000, oauth = my_oauth)
+#tweets.df <- parseTweets("tweetsUS.json",simplify = FALSE)
+
+# Again, save the file for further use
+#saveRDS(tweets.df, "StarbucksOriginalData.RDS")
+
+# star <- searchTwitteR("starbucks", n = 10000, since = "2012-01-01")
+# pumpkin <- searchTwitteR("pumpkin spice latte", n = 10000, since = "2012-01-01")
+# psl <- searchTwitteR("#psl", n = 10000, since = "2012-01-01")
+# 
+# stardf <- twListToDF(star)
+
+# #Remove non english tweets and with no geo location enabled
+# stardf <- stardf[stardf$lang=="en",]
+# stardf <- stardf[stardf$geo_enabled==TRUE,]
+# 
+# #Clean non US
+# clean <- which(stardf$country_code == "US")
+# stardf <- stardf[clean,]
+# 
+# searchTerm <- "starbucks"
+# searchResults <- searchTwitter(searchTerm, n = 500)  # Gather Tweets 
+# tweetFrame <- twListToDF(searchResults)  # Convert to a nice dF
+# 
+# userInfo <- lookupUsers(tweetFrame$screenName)  # Batch lookup of user info
+# userFrame <- twListToDF(userInfo)  # Convert to a nice dF
+
+#Using leaflet and json
+#locatedUsers <- !is.na(userFrame$location)  # Keep only users with location info
+
+# library(data.table)
+# locations <- geocode(userFrame$location[!userFrame$location %in% ""])  # Use amazing API to guess
+# 
+# # approximate lat/lon from textual location data.
+# with(locations, plot(longitude, latitude))
+# 
+# worldMap <- map_data("world")  # Easiest way to grab a world map shapefile
+# 
+# zp1 <- ggplot(worldMap)
+# zp1 <- zp1 + geom_path(aes(x = long, y = lat, group = group),  # Draw map
+#                        colour = gray(2/3), lwd = 1/3)
+# zp1 <- zp1 + geom_point(data = locations,  # Add points indicating users
+#                         aes(x = lon, y = lat),
+#                         colour = "RED", alpha = 1/2, size = 1)
+# zp1 <- zp1 + coord_equal()  # Better projections are left for a future post
+# zp1 <- zp1 + theme_minimal()  # Drop background annotations
+# print(zp1)
+
+tweets_star <- searchTwitter("@Starbucks OR #starbucks", n = 5000, lang = "en")
+tweets_psl <- searchTwitter("pumpkin spice latte OR #psl", n = 5000, lang = "en")
+
+
+tweets_star.df <-twListToDF(tweets_star)
+tweets_psl.df <-twListToDF(tweets_psl)
+
+#write.csv(tweets.df, "C:\\Users\\nikhi_2000\\Desktop\\RFINAL\\tweets.csv") #an example of a file extension of the folder in which you want to save the .csv file.
+
+write.csv(tweets_star.df, file = "star_tweets.csv")
+write.csv(tweets_psl.df, file = "psl_tweets.csv")
+
+#setwd("C:/Users/nikh_2000/Desktop/RFINAL")
+
+#read.csv(, stringsAsFactors = FALSE)
+
+MyData <- read.csv(file="star_tweets.csv", header=TRUE, sep=",")
+MyData <- read.csv(file="psl_tweets.csv", header=TRUE, sep=",")
+
+# Map using leaflet
+#mymap <- map_data("world")
+#m <- leaflet(mymap) %>% addTiles()
+#m %>% addCircles(lng = ~longitude, lat = ~latitude, popup = mymap$type, weight = 8, radius = 40, color = "#fb3004", stroke = TRUE, fillOpacity = 0.8)
+
+#Longitude/Latitude data
+stardf.read <- read.csv(file="star_tweets.csv", header=TRUE)
+loc.csv <- -1*is.na(stardf.read$longitude) + 1 #long
+loceq1.csv  <- which(loc.csv==1) #find = 1
+locations.csv <- data.frame(latitude = as.numeric(stardf.read$latitude[loceq1.csv]), longitude = as.numeric(stardf.read$longitude[loceq1.csv])) #csv file
+
+psldf.read <- read.csv(file="psl_tweets.csv", header=TRUE)
+loc_psl.csv <- -1*is.na(psldf.read$longitude) + 1 #long
+loceq1_psl.csv  <- which(loc_psl.csv==1) #find = 1
+locations_psl.csv <- data.frame(latitude = as.numeric(psldf.read$latitude[loceq1_psl.csv]), longitude = as.numeric(psldf.read$longitude[loceq1_psl.csv])) #csv file
+
+#Map
+#mymap <- map_data("state")
+#lon_lat <- data.frame(x=as.numeric(stardf.read$place_lon), y=as.numeric(stardf.read$place_lat))
+
+#lon_lat <- subset(points, (latitude>=25 & latitude<=50) & (longitude>=-125 & longitude<=-65))
+#locations.csv <- subset(locations.csv, (latitude>=25 & latitude<=50) & (longitude>=-125 & longitude<=-65))
+
+```
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#World Map of Starbucks
+
+map <- map_data("world")
+
+g1 <- ggplot() + geom_polygon(data = map, aes(x=long, y = lat, fill = region, group = group), color = "white") + coord_fixed(1.3) + guides(fill=FALSE)
+
+g1 <- g1 + geom_point(data = locations.csv, aes(x = longitude, y = latitude), color = "yellow", size =2) + labs(x="Longitude", y="Latitude") + ggtitle("Location of Tweets Mentioning Starbucks the in World")
+
+g1;
+```
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#US MAP of Starbucks
+
+locations.csv <- subset(locations.csv, (latitude>=25 & latitude<=50) & (longitude>=-125 & longitude<=-65))
+
+map <- map_data("state")
+
+g2 <- ggplot() + geom_polygon(data = map, aes(x=long, y = lat, fill = region, group = group), color = "white") + coord_fixed(1.3) + guides(fill=FALSE)
+
+g2 <- g2 + geom_point(data = locations.csv, aes(x = longitude, y = latitude), color = "yellow", size =2) + labs(x="Longitude",     y="Latitude") + ggtitle("Location of Tweets Mentioning Starbucks in the USA")
+
+g2;
+```
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#World Map of Psl
+
+map <- map_data("world")
+
+g3 <- ggplot() + geom_polygon(data = map, aes(x=long, y = lat, fill = region, group = group), color = "white") + coord_fixed(1.3) + guides(fill=FALSE)
+
+g3 <- g3 + geom_point(data = locations_psl.csv, aes(x = longitude, y = latitude), color = "yellow", size =2) + labs(x="Longitude", y="Latitude") + ggtitle("Location of Tweets Mentioning Pumpkin Spice Latte in the World")
+
+g3;
+```
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#USA Map of Psl
+
+locations.csv <- subset(locations_psl.csv, (latitude>=25 & latitude<=50) & (longitude>=-125 & longitude<=-65))
+
+map <- map_data("state")
+
+g4 <- ggplot() + geom_polygon(data = map, aes(x=long, y = lat, fill = region, group = group), color = "white") + coord_fixed(1.3) + guides(fill=FALSE)
+
+g4 <- g4 + geom_point(data = locations_psl.csv, aes(x = longitude, y = latitude), color = "yellow", size =2) + labs(x="Longitude", y="Latitude") + ggtitle("Location of Tweets Mentioning Pumpkin Spice Latte in the USA")
+
+g4;
+```
+
+# World and USA Maps
+
+These maps are  of the world and USA. They show the location of tweets about @Starbucks and pumpkin spice latte. Most of the tweets are in urban areas and there are more in USA than across the world. Starbucks has expanded world wide over the years but still is most popular in the US. An interesting thing to look at is that there will be no twitter location data from China (even though Starbucks is very popular there) because twitter is banned in China! It is very difficult to analyze the location of the tweets about Starbucks or the pumpkin spice latte with a limited number of tweets because only 1% of all tweets on twitter have geo location enabled. Subsetting a limited amount of starbucks related tweets from this 1% makes it even more difficult to analyze.
+
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(twitteR)
+library(reshape)
+library(dplyr)
+
+#Grab tweets, process, save
+set.seed(20170202); 
+ht <- 'starbucks'; 
+tweets.raw <- searchTwitter(ht, n = 5000, lang = 'en');
+
+save(tweets.raw, file = "emojitext.rdata")
+
+#convert to df
+df <- twListToDF(strip_retweets(tweets.raw, strip_manual = TRUE, strip_mt = TRUE)); df$hashtag <- ht; df$created <- as.POSIXlt(df$created);
+
+df$text <- iconv(df$text, 'latin1', 'ASCII', 'byte'); 
+df$url <- paste0('https://twitter.com/', df$screenName, '/status/', df$id); 
+df <- plyr::rename(df, c(retweetCount = 'retweets'));
+df.a <- subset(df, select = c(text, created, url, latitude, longitude, retweets, hashtag)); 
+
+#nrow(df.a); 
+#head(df.a);
+
+#setwd('C:/Users/nikhi_2000/Desktop/ios_9_3_emoji_files/emojis-master/2017.0206 emoji data science tutorial'); 
+
+write.csv(df.a, paste0('tweets.cleaned_', format(min(df.a$created), '%m%d'), '-', format(max(df.a$created), '%m%d'), '_', ht, '_', Sys.Date(), '_', format(Sys.time(), '%H-%M-%S'), '_n', nrow(df.a), '.csv'), row.names = FALSE);
+
+tweets <- df; 
+tweets$z <- 1; 
+tweets$created <- as.POSIXlt(tweets$created); 
+#nrow(tweets); min(tweets$created); max(tweets$created); median(tweets$created);
+
+library(plyr)
+library(ggplot2)
+library(splitstackshape)
+library(stringr)
+
+#Read in saved twitter data
+setwd("C:/Users/nikhi_000/Desktop/RFINAL")
+#fnames <- c('starbucks');
+#fnames <- paste0(fnames, '.csv'); 
+
+load("emojitext.rdata")
+
+#df <- do.call(rbind.fill, lapply(fnames, read.csv));
+df$username <- substr(substr(df$url, 21, nchar(as.character(df$url))), 1, nchar(substr(df$url, 21, nchar(as.character(df$url))))-26);
+
+tweets.full <- df; 
+tweets.full$X <- NULL; 
+tweets.full$z <- 1;
+
+#### sanity checking
+tweets.full$created <- as.POSIXct(tweets.full$created); #min(tweets.full$created); max(tweets.full$created); median(tweets.full$created); nrow(tweets.full); length(unique(tweets.full$username))
+
+## dedupe dataset by url
+tweets.dupes <- tweets.full[duplicated(tweets.full$url), ]; #nrow(tweets.full); nrow(tweets.dupes); 
+
+#test <- subset(tweets.full, url %in% tweets.dupes$url); 
+#test <- test[with(test, order(url)), ];
+
+tweets <- tweets.full[!duplicated(tweets.full$url), ];
+tweets <- arrange(tweets, url); 
+row.names(tweets) <- NULL;
+tweets$tweetid <- as.numeric(row.names(tweets)); #nrow(tweets);
+
+tweets.final <- tweets;
+
+## dedupe dataset by username
+tweets.dupes <- tweets.full[duplicated(tweets.full$username), ]; #nrow(tweets.full); nrow(tweets.dupes);
+
+#test <- subset(tweets, url %in% tweets.dupes$url); 
+#test <- test[with(test, order(url)), ];
+
+tweets <- tweets.full[!duplicated(tweets.full$username), ]; 
+tweets <- arrange(tweets, url); 
+
+row.names(tweets) <- NULL; 
+tweets$tweetid <- as.numeric(row.names(tweets)); #nrow(tweets);
+
+
+#Read in emoji dictionaries
+#setwd("C:/Users/Z/Desktop/Files/RStudio/Coursera/specdata")
+emdict.la <- read.csv('C:/Users/nikhi_000/Desktop/RFINAL/ios_9_3_emoji_files/emojis-master/2017.0206 emoji data science tutorial/emoticon_conversion_noGraphic.csv', header = F); #Lauren Ancona; https://github.com/laurenancona/twimoji/tree/master/twitterEmojiProject
+emdict.la <- emdict.la[-1, ]; 
+
+row.names(emdict.la) <- NULL; 
+names(emdict.la) <- c('unicode', 'bytes', 'name');
+
+emdict.la$emojiid <- row.names(emdict.la);
+
+emdict.jpb <- read.csv('C:/Users/nikhi_000/Desktop/RFINAL/ios_9_3_emoji_files/emojis-master/2017.0206 emoji data science tutorial/emDict.csv', header = F) #Jessica Peterka-Bonetta; http://opiateforthemass.es/articles/emoticons-in-R/
+emdict.jpb <- emdict.jpb[-1, ]; 
+
+row.names(emdict.jpb) <- NULL; 
+names(emdict.jpb) <- c('name', 'bytes', 'rencoding'); 
+
+emdict.jpb$name <- tolower(emdict.jpb$name);
+emdict.jpb$bytes <- NULL;
+
+## merge dictionaries
+emojis <- merge(emdict.la, emdict.jpb, by = 'name');
+emojis$emojiid <- as.numeric(emojis$emojiid); 
+emojis <- arrange(emojis, emojiid);
+
+
+#Find top emojis for a given subset of data
+tweets <- tweets.final;
+#tweets <- subset(tweets.final, hashtag %in% c('#psl')); 
+
+## create full tweets by emojis matrix
+df.s <- matrix(NA, nrow = nrow(tweets), ncol = ncol(emojis));
+systemtime <- system.time(df.s <- sapply(emojis$rencoding, regexpr, tweets$text, ignore.case = T, useBytes = T));
+
+rownames(df.s) <- 1:nrow(df.s); 
+colnames(df.s) <- 1:ncol(df.s); 
+
+df.t <- data.frame(df.s);
+df.t$tweetid <- tweets$tweetid;
+
+# merge in hashtag data from original tweets dataset
+df.a <- subset(tweets, select = c(tweetid, hashtag));
+df.u <- merge(df.t, df.a, by = 'tweetid'); df.u$z <- 1; df.u <- arrange(df.u, tweetid);
+tweets.emojis.matrix <- df.u;
+
+## create emoji count dataset
+df <- subset(tweets.emojis.matrix)[, c(2:843)];
+
+count <- colSums(df > -1);
+
+emojis.m <- cbind(count, emojis); 
+emojis.m <- arrange(emojis.m, desc(count));
+
+emojis.count <- subset(emojis.m, count > 1); 
+emojis.count$dens <- round(1000 * (emojis.count$count / nrow(tweets)), 1); 
+emojis.count$dens.sm <- (emojis.count$count + 1) / (nrow(tweets) + 1);
+emojis.count$rank <- as.numeric(row.names(emojis.count));
+emojis.count.p <- subset(emojis.count, select = c(name, dens, count, rank));
+
+#print summary stats
+#subset(emojis.count.p, rank <= 10);
+
+num.tweets <- nrow(tweets); df.t <- rowSums(tweets.emojis.matrix[, c(2:843)] > -1); num.tweets.with.emojis <- length(df.t[df.t > 0]); num.emojis <- sum(emojis.count$count);
+
+#min(tweets$created); max(tweets$created); median(tweets$created);
+#num.tweets; num.tweets.with.emojis; round(100 * (num.tweets.with.emojis / num.tweets), 1); num.emojis; nrow(emojis.count);
+
+#Make bar chart of top emojis in the new dataset
+df.plot <- subset(emojis.count.p, rank <= 10); xlab <- 'Rank'; ylab <- 'Overall Frequency (per 5000 Tweets)';
+
+setwd("C:/Users/nikhi_000/Desktop/RFINAL/ios_9_3_emoji_files/emojis-master/2017.0206 emoji data science tutorial/ios_9_3_emoji_files")
+
+df.plot <- arrange(df.plot, name);
+imgs <- lapply(paste0(df.plot$name, '.png'), png::readPNG); 
+
+g <- lapply(imgs, grid::rasterGrob);
+k <- 0.20 * (10/nrow(df.plot)) * max(df.plot$dens); 
+
+df.plot$xsize <- k; df.plot$ysize <- k; #df.plot$xsize <- k * (df.plot$dens / max(df.plot$dens)); df.plot$ysize <- k * (df.plot$dens / max(df.plot$dens));
+
+df.plot <- arrange(df.plot, name);
+
+g1 <- ggplot(data = df.plot, aes(x = rank, y = dens)) +
+  geom_bar(stat = 'identity', fill = '#f4a644') +
+  xlab(xlab) + ylab(ylab) +
+  mapply(function(x, y, i) {
+    annotation_custom(g[[i]], xmin = x-0.5*df.plot$xsize[i], xmax = x+0.5*df.plot$xsize[i],
+                      ymin = y-0.5*df.plot$ysize[i], ymax = y+0.5*df.plot$ysize[i])},
+    df.plot$rank, df.plot$dens, seq_len(nrow(df.plot))) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(1, nrow(df.plot), 1), labels = seq(1, nrow(df.plot), 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1.10 * max(df.plot$dens))) +
+  theme(panel.grid.minor.y = element_blank(),
+        axis.title.x = element_text(size = 10), axis.title.y = element_text(size = 14),
+        axis.text.x  = element_text(size = 8, colour = 'black'), axis.text.y  = element_text(size = 8, colour = 'black')) +     ggtitle("Most Common Emojis Tweeted with 'Starbucks'");
+
+g1;
+
+#setwd('C:/Users/nikhi_000/Desktop/RFINAL');
+
+#png(paste0('emoji_barchart_', as.Date(min(tweets$created)), '_', as.Date(max(tweets$created)), '_', Sys.Date(), '_', format(Sys.time(), '%H-%M-%S'), '_n', nrow(tweets), '.png'), 
+#    width = 6600, height = 4000, units = 'px', res = 1000)
+
+#g1
+#dev.off()
+
+##### CREATE MASTER DATASET OF ORIGINAL TWEETS appended with array of emojis
+## EMOJIS: create reduced tweets+emojis matrix
+# df.s <- data.frame(matrix(NA, nrow = nrow(tweets), ncol = 2));
+# names(df.s) <- c('tweetid', 'emoji.ids');
+# df.s$tweetid <- 1:nrow(tweets);
+# 
+# system.time(df.s$emoji.ids <- apply(tweets.emojis.matrix[, c(2:843)], 1, function(x) paste(which(x > -1), sep = '', collapse = ', ')));
+# system.time(df.s$num.emojis <- sapply(df.s$emoji.ids, function(x) length(unlist(strsplit(x, ', ')))));
+# 
+# df.s.emojis <- subset(df.s, num.emojis > 0);
+# df.s.nonemojis <- subset(df.s, num.emojis == 0);
+# df.s.nonemojis$emoji.names <- '';
+# 
+# # convert to long, only for nonzero entries
+# df.l <- cSplit(df.s.emojis, splitCols = 'emoji.ids', sep = ', ', direction = 'long')
+# map <- subset(emojis, select = c(emojiid, name));
+# map$emojiid <- as.numeric(map$emojiid);
+# 
+# df.m <- merge(df.l, map, by.x = 'emoji.ids', by.y = 'emojiid');
+# df.m <- arrange(df.m, tweetid);
+# df.m <- rename(df.m, c(name = 'emoji.name'));
+# 
+# tweets.emojis.long <- subset(df.m, select = c(tweetid, emoji.name));
+# df.n <- aggregate(emoji.name ~ tweetid, paste, collapse = ', ', data = df.m);
+# 
+# ## merge back with original tweets dataset
+# df.f <- merge(df.s.emojis, df.n, by = 'tweetid');
+# df.f <- rename(df.f, c(emoji.name = 'emoji.names'));
+# 
+# df.g <- rbind(df.f, df.s.nonemojis);
+# df.g <- arrange(df.g, tweetid);
+# 
+# df.h <- merge(tweets, df.g, by = 'tweetid', all.x = TRUE);
+# df.h$emoji.ids <- NULL;
+# df.h$tweetid <- as.numeric(df.h$tweetid);
+# df.h <- arrange(df.h, tweetid);
+# 
+# tweets.emojis <- df.h;
+# 
+# #### MAKE TWO WAY PLOT FOR A SET OF MUTUALLY EXCLUSIVE SUBSETS OF THE DATA
+# df.1 <- subset(tweets.emojis, grepl(paste(c('#starbucks'), collapse = '|'), tolower(tweets.emojis$text)));
+# df.2 <- subset(tweets.emojis, grepl(paste(c('#psl'), collapse = '|'), tolower(tweets.emojis$text)));
+# 
+# nrow(df.1); nrow(df.2);
+# 
+# # dataset 1
+# df.a <- subset(subset(df.1, emoji.names != ''), select = c(tweetid, emoji.names));
+# df.a$emoji.names <- as.character(df.a$emoji.names);
+# 
+# df.b <- data.frame(table(unlist(strsplit(df.a$emoji.names, ','))));
+# names(df.b) <- c('var', 'freq');
+# df.b$var <- trimws(df.b$var, 'both');
+# df.b <- subset(df.b, var != '');
+# 
+# df.c <- aggregate(freq ~ var, data = df.b, function(x) sum(x));
+# df.c <- df.c[with(df.c, order(-freq)), ];
+# row.names(df.c) <- NULL;
+# 
+# df.d <- subset(df.c, freq > 1);
+# df.d$dens <- round(1000 * (df.d$freq / nrow(df)), 1);
+# df.d$dens.sm <- (df.d$freq + 1) / (nrow(df) + 1);
+# df.d$rank <- as.numeric(row.names(df.d));
+# df.d <- rename(df.d, c(var = 'name'));
+# 
+# df.e <- subset(df.d, select = c(name, dens, dens.sm, freq, rank));
+# df.e$ht <- as.character(arrange(data.frame(table(tolower(unlist(str_extract_all(df.1$text, '#\\w+'))))), -Freq)$Var1[1]);
+# df.e[1:10, ];
+# emojis.count.1 <- df.e;
+# 
+# # dataset 2
+# df.z <- subset(subset(df.2, emoji.names != ''), select = c(tweetid, emoji.names));
+# df.z$emoji.names <- as.character(df.z$emoji.names);
+# 
+# df.y <- data.frame(table(unlist(strsplit(df.z$emoji.names, ','))));
+# names(df.y) <- c('var', 'freq');
+# df.y$var <- trimws(df.y$var, 'both');
+# df.y <- subset(df.y, var != '');
+# 
+# df.x <- aggregate(freq ~ var, data = df.y, function(x) sum(x));
+# df.x <- df.x[with(df.x, order(-freq)), ];
+# row.names(df.x) <- NULL;
+# 
+# df.w <- subset(df.x, freq > 1);
+# df.w$dens <- round(1000 * (df.w$freq / nrow(df)), 1);
+# df.w$dens.sm <- (df.w$freq + 1) / (nrow(df) + 1);
+# df.w$rank <- as.numeric(row.names(df.w));
+# df.w <- rename(df.w, c(var = 'name'));
+# 
+# df.v <- subset(df.w, select = c(name, dens, dens.sm, freq, rank));
+# df.v$ht <- as.character(arrange(data.frame(table(tolower(unlist(str_extract_all(df.2$text, '#\\w+'))))), -Freq)$Var1[1]);
+# df.v[1:10, ];
+# emojis.count.2 <- df.v;
+# 
+# # combine datasets and create final dataset
+# names(emojis.count.1)[-1] <- paste0(names(emojis.count.1)[-1], '.1');
+# names(emojis.count.2)[-1] <- paste0(names(emojis.count.2)[-1], '.2');
+# 
+# df.a <- merge(emojis.count.1, emojis.count.2, by = 'name', all.x = TRUE, all.y = TRUE);
+# df.a[, c(2:4, 6:8)][is.na(df.a[, c(2:4, 6:8)])] <- 0;
+# df.a <- df.a[with (df.a, order(-dens.1)), ];
+# 
+# df.a$index <- ifelse(df.a$dens.1 > 0 & df.a$dens.2 > 0 & (df.a$dens.1 > df.a$dens.2), round(100 * ((df.a$dens.1 / df.a$dens.2) - 1), 0),
+#                      ifelse(df.a$dens.1 > 0 & df.a$dens.2 > 0 & (df.a$dens.2 > df.a$dens.1), -1 * round(100 * ((df.a$dens.2 / df.a$dens.1) - 1), 0), NA));
+# 
+# df.a$logor <- log(df.a$dens.sm.1 / df.a$dens.sm.2);
+# df.a$dens.mean <- 0.5 * (df.a$dens.1 + df.a$dens.2);
+# 
+# k <- 50; df.b <- subset(df.a, (rank.1 <= k | rank.2 <= k) &
+#                           (freq.1 >= 5 | freq.2 >= 5) &
+#                           (freq.1 > 0 & freq.2 > 0) & dens.mean > 0); nrow(df.b);
+# 
+# df.c <- subset(df.b, select = c(name, dens.1, dens.2, freq.1, freq.2, dens.mean, round(logor, 2)));
+# df.c <- df.c[with(df.c, order(-logor)), ]; row.names(df.c) <- NULL; nrow(df.c); df.c;
+# 
+# emojis.comp.p <- df.c;
+# rbind(head(emojis.comp.p), tail(emojis.comp.p))
+# 
+# ##### PLOT TOP EMOJIS SCATTERPLOT: FREQ VS VALENCE
+# ## read in custom emojis
+# setwd('C:/Users/nikhi_000/Desktop/RFINAL/ios_9_3_emoji_files/emojis-master/2017.0206 emoji data science tutorial/ios_9_3_emoji_files');
+# 
+# df.t <- arrange(emojis.comp.p, name);
+# imgs <- lapply(paste0(df.t$name, '.png'), png::readPNG) #read png
+# g <- lapply(imgs, grid::rasterGrob);
+# 
+# ## make plot
+# df.t <- arrange(emojis.comp.p, logor)
+# 
+# xlab <- paste0('Emoji Valence: Log Odds Ratio (', paste0(unique(emojis.count.2$ht), ' <--> ', unique(emojis.count.1$ht), ')'));
+# ylab <- 'Overall Frequency (Per 1,000 Tweets)'
+# 
+# k <- 8 # size parameter for median element
+# xsize <- (k/100) * (max(df.t$logor) - min(df.t$logor)); ysize <- (k/100) * (max(df.t$dens.mean) - min(df.t$dens.mean));
+# 
+# df.t$xsize <- xsize;
+# df.t$ysize <- ysize;
+# 
+# df.t$dens.m <- ifelse(df.t$dens.mean > median(df.t$dens.mean), round(sqrt((df.t$dens.mean / min(df.t$dens.mean))), 2), 1);
+# df.t$xsize <- df.t$dens.m * df.t$xsize; df.t$ysize <- df.t$dens.m * df.t$ysize;
+# 
+# df.t <- arrange(df.t, name);
+# 
+# #plot
+# g2 <- ggplot(df.t, aes(jitter(logor), dens.mean)) +
+#   xlab(xlab) + ylab(ylab) +
+#   mapply(function(x, y, i) {
+#     annotation_custom(g[[i]], xmin = x-0.5*df.t$xsize[i], xmax = x+0.5*df.t$xsize[i],
+#                       ymin = y-0.5*df.t$ysize[i], ymax = y+0.5*df.t$ysize[i])},
+#     jitter(df.t$logor), df.t$dens.mean, seq_len(nrow(df.t))) +
+#   scale_x_continuous(limits = c(1.15 * min(df.t$logor), 1.15 * max(df.t$logor))) +
+#   scale_y_continuous(limits = c(0, 1.20 * max(df.t$dens.mean))) +
+#   geom_vline(xintercept = 0) + geom_hline(yintercept = 0) +
+#   theme_bw() +
+#   theme(axis.title.x = element_text(size = 10), axis.title.y = element_text(size = 10),
+#         axis.text.x  = element_text(size = 8, colour = 'black'), axis.text.y  = element_text(size = 8, colour = 'black'));
+# 
+# g2;
+
+#setwd('C:/Users/nikhi_000/Desktop/RFINAL');
+
+#png(paste0('emojis.comp.p_', Sys.Date(), '_', format(Sys.time(), '%H-%M-%S'), '.png'), 
+#    width = 6600, height = 4000, units = 'px', res = 1000);
+#g2
+#dev.off()
+
+```
+
+# Emoji Analysis
+
+This plot shows the top 10 emojis used in tweets about starbucks. The most commonly used emoji is the laughing emoji, which is positive feedback. The only emoji that could be interpreted as negative is the crying face ranked third, but it is more likely that this emoji was used on twitter in a sarcastic manner meaning that it is still most likely a positive emoji.
+
+
+# Starbucks Word Cloud
+
+https://nikhil2000.shinyapps.io/starbucks_word_cloud
+
+This is the link to my Shiny web app that I have created. It is a word cloud that shows tweets with '@Starbucks' and 'pumpkin spice latte'. There are two options to change the word cloud. You can adjust the minimum frequency of the words and the maximum number of words to see different versions of the word cloud. The more frequestly used words in the tweets are bigger in the word cloud.You can toggle between these two tweet word cloudsby clicking the type of tweets you want to look at and then pressing the 'Change' buttton. Word clouds are helpful to analyze tweets about specific things.
+
+There are a lot more tweets about "@Starbucks" than "pumpkin spice latte", so the word cloud for the starbucks tweets is much larger. These tweets show words like 'started morning', 'good', 'Sunday Funday', and 'workout' (set at min freq = 5 and max words = 150). These words show that many people are tweeting positive things about Starbucks when they go to Starbucks cafe. They are going to Starbucks at different times of their days and are having a general good experience. If we analyze more tweets (espicially pumpkin spice latte tweets), then we can create larger word clouds that would allow us to draw more conclusions.
+
+
+```{r tweets, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(twitteR)
+library(sentimentr)
+library(plyr)
+library(ggplot2)
+library(RColorBrewer)
+library(plotrix)
+library(dplyr)
+library(tidytext)
+library(stringr)
+library(reshape)
+
+#pos.words <- read.csv('C:/Users/nikhi_000/Desktop/RFINAL/positive-words.csv')
+#neg.words <- read.csv('C:/Users/nikhi_000/Desktop/RFINAL/negative-words.csv')
+
+setwd('C:/Users/nikhi_000/Desktop/RFINAL')
+
+pos.words <- scan('positive-words.csv', what = 'character', comment.char=';')
+neg.words <- scan('negative-words.csv', what = 'character', comment.char=';')
+
+pos.words = c(pos.words, 'new','nice' ,'good', 'horizon')
+neg.words = c(neg.words, 'wtf', 'behind','feels', 'ugly', 'back','worse' , 'shitty', 'bad', 'no','freaking','sucks','horrible')
+
+tweets <- searchTwitter("@Starbucks OR pumpkin spice latte", n=5000, lang="en", since="2017-01-01")
+tweets.df <- twListToDF(tweets)
+
+score.sentiment = function(tweets, pos.words, neg.words)
+ 
+{
+ 
+require(plyr)
+require(stringr)
+
+scores = laply(tweets, function(tweet, pos.words, neg.words) {
+  
+#Clean text
+tweet = gsub('https://','',tweet) # removes https://
+tweet = gsub('http://','',tweet) # removes http://
+tweet=gsub('[^[:graph:]]', ' ',tweet) ## removes graphic characters 
+       #like emoticons 
+tweet = gsub('[[:punct:]]', '', tweet) # removes punctuation 
+tweet = gsub('[[:cntrl:]]', '', tweet) # removes control characters
+tweet = gsub('\\d+', '', tweet) # removes numbers
+tweet=str_replace_all(tweet,"[^[:graph:]]", " ") 
+
+tweet = tolower(tweet) # makes all letters lowercase
+
+word.list = str_split(tweet, '\\s+') # splits the tweets by word in a list
+ 
+words = unlist(word.list) # turns the list into vector
+ 
+pos.matches = match(words, pos.words) ## returns matching 
+          #values for words from list 
+neg.matches = match(words, neg.words)
+ 
+pos.matches = !is.na(pos.matches) ## converts matching values to true of false
+neg.matches = !is.na(neg.matches)
+ 
+score = sum(pos.matches) - sum(neg.matches) # true and false are 
+                #treated as 1 and 0 so they can be added
+ 
+return(score)
+ 
+}, pos.words, neg.words )
+ 
+scores.df = data.frame(score=scores, text=tweets)
+ 
+return(scores.df)
+ 
+}
+
+tweets = searchTwitter('@Starbucks',n=100)
+tweets.text = laply(tweets,function(t)t$getText()) # gets text from Tweets
+
+analysis = score.sentiment(tweets.text, pos.words, neg.words) # calls sentiment function
+
+summary(analysis$score)
+#count(analysis$score)
+
+hist(analysis$score, col ="blue", main ="Score of tweets", xlab = 'Sentimental Score', ylab = "Count of Tweets")
+
+# pos <- sum(pos.words)
+# neg <- sum(neg.words)
+# pie <- c(pos, neg)
+# plus_minus <- c("+", "-")
+# pie3D(pie, labels = plus_minus, explode = 0.12, main = "Pie Chart of Postitive and Negative Tweets")
+
+```
+
+# Sentiment Score Analysis
+
+This histogram shows the sentiment score plotted for tweets with '@Starbucks' and 'pumpkin spice latte'. The histogram shows that that even though the highest count is slightly negative, the sentimental score is more positive than negative. This means that there is positive feedback on twitter from tweets about Starbucks and the Pumpkin Spice Latte. Starbucks users are generally happy, so Starbucks is doing well.
+
+
+# Conclusion
+
+The analysis shows that Starbucks is a very popular company and is liked by most of its users. The geographic segmentation maps show the few different locations where starbuck tweet geo location is enabled. The emoji analysis shows all the postive emojis used by twitter users when describing Starbucks or the most popular drink the Pumpkin Spice Latte. The word cloud shows the most common words used in the tweets about Starbucks and the drink. The sentiment score analysis shows numerically the positive things twitter users are saying about Starbucks.
